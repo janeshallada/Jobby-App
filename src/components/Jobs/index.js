@@ -18,41 +18,17 @@ const apiStatusConstants = {
 }
 
 const employmentTypesList = [
-  {
-    label: 'Full Time',
-    employmentTypeId: 'FULLTIME',
-  },
-  {
-    label: 'Part Time',
-    employmentTypeId: 'PARTTIME',
-  },
-  {
-    label: 'Freelance',
-    employmentTypeId: 'FREELANCE',
-  },
-  {
-    label: 'Internship',
-    employmentTypeId: 'INTERNSHIP',
-  },
+  {label: 'Full Time', employmentTypeId: 'FULLTIME'},
+  {label: 'Part Time', employmentTypeId: 'PARTTIME'},
+  {label: 'Freelance', employmentTypeId: 'FREELANCE'},
+  {label: 'Internship', employmentTypeId: 'INTERNSHIP'},
 ]
 
 const salaryRangesList = [
-  {
-    salaryRangeId: '1000000',
-    label: '10 LPA and above',
-  },
-  {
-    salaryRangeId: '2000000',
-    label: '20 LPA and above',
-  },
-  {
-    salaryRangeId: '3000000',
-    label: '30 LPA and above',
-  },
-  {
-    salaryRangeId: '4000000',
-    label: '40 LPA and above',
-  },
+  {salaryRangeId: '1000000', label: '10 LPA and above'},
+  {salaryRangeId: '2000000', label: '20 LPA and above'},
+  {salaryRangeId: '3000000', label: '30 LPA and above'},
+  {salaryRangeId: '4000000', label: '40 LPA and above'},
 ]
 
 class Jobs extends Component {
@@ -64,6 +40,7 @@ class Jobs extends Component {
     searchInput: '',
     activeEmploymentTypes: [],
     activeSalaryRange: '',
+    activeLocations: [],
   }
 
   componentDidMount() {
@@ -101,10 +78,17 @@ class Jobs extends Component {
   getJobs = async () => {
     this.setState({jobsStatus: apiStatusConstants.inProgress})
     const jwtToken = Cookies.get('jwt_token')
-    const {searchInput, activeEmploymentTypes, activeSalaryRange} = this.state
+    const {
+      searchInput,
+      activeEmploymentTypes,
+      activeSalaryRange,
+      activeLocations,
+    } = this.state
 
     const employmentTypesQuery = activeEmploymentTypes.join(',')
-    const apiUrl = `https://apis.ccbp.in/jobs?employment_type=${employmentTypesQuery}&minimum_package=${activeSalaryRange}&search=${searchInput}`
+    const locationsQuery = activeLocations.join(',')
+
+    const apiUrl = `https://apis.ccbp.in/jobs?employment_type=${employmentTypesQuery}&minimum_package=${activeSalaryRange}&location=${locationsQuery}&search=${searchInput}`
 
     const options = {
       method: 'GET',
@@ -116,7 +100,7 @@ class Jobs extends Component {
     const response = await fetch(apiUrl, options)
     if (response.ok) {
       const data = await response.json()
-      const updatedJobs = data.jobs.map(each => ({
+      const updatedJobs = (data.jobs || []).map(each => ({
         id: each.id,
         companyLogoUrl: each.company_logo_url,
         employmentType: each.employment_type,
@@ -177,6 +161,20 @@ class Jobs extends Component {
     this.setState({activeSalaryRange: id}, this.getJobs)
   }
 
+  onChangeLocation = id => {
+    this.setState(prevState => {
+      const {activeLocations} = prevState
+      if (activeLocations.includes(id)) {
+        return {
+          activeLocations: activeLocations.filter(each => each !== id),
+        }
+      }
+      return {
+        activeLocations: [...activeLocations, id],
+      }
+    }, this.getJobs)
+  }
+
   renderLoader = () => (
     <div className="loader-container" data-testid="loader">
       <Loader type="ThreeDots" color="#ffffff" height="50" width="50" />
@@ -211,8 +209,16 @@ class Jobs extends Component {
   }
 
   renderJobsSuccess = () => {
-    const {jobsList} = this.state
-    if (jobsList.length === 0) {
+    const {jobsList = [], activeLocations = []} = this.state
+
+    const filteredJobs =
+      activeLocations.length === 0
+        ? jobsList
+        : jobsList.filter(eachJob =>
+            activeLocations.includes(eachJob.location.toUpperCase()),
+          )
+
+    if (filteredJobs.length === 0) {
       return (
         <div className="no-jobs-container">
           <img
@@ -230,7 +236,7 @@ class Jobs extends Component {
 
     return (
       <ul className="jobs-list">
-        {jobsList.map(each => (
+        {filteredJobs.map(each => (
           <JobCard key={each.id} jobDetails={each} />
         ))}
       </ul>
@@ -293,7 +299,11 @@ class Jobs extends Component {
   }
 
   render() {
-    const {activeEmploymentTypes, activeSalaryRange} = this.state
+    const {
+      activeEmploymentTypes,
+      activeSalaryRange,
+      activeLocations,
+    } = this.state
 
     return (
       <>
@@ -308,8 +318,10 @@ class Jobs extends Component {
                 salaryRangesList={salaryRangesList}
                 selectedEmploymentTypes={activeEmploymentTypes}
                 selectedSalaryRange={activeSalaryRange}
+                selectedLocations={activeLocations}
                 onChangeEmploymentType={this.onChangeEmploymentType}
                 onChangeSalaryRange={this.onChangeSalaryRange}
+                onChangeLocation={this.onChangeLocation}
               />
             </div>
             <div className="jobs-section">

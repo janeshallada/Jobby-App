@@ -46,28 +46,29 @@ class JobItemDetails extends Component {
     const response = await fetch(url, options)
     if (response.ok) {
       const data = await response.json()
-      const job = data.job_details
+      const job = data.job_details || {}
+
       const updatedJob = {
-        id: job.id,
-        companyLogoUrl: job.company_logo_url,
-        companyWebsiteUrl: job.company_website_url,
-        employmentType: job.employment_type,
-        jobDescription: job.job_description,
-        location: job.location,
-        packagePerAnnum: job.package_per_annum,
-        rating: job.rating,
-        title: job.title,
-        skills: job.skills.map(each => ({
+        id: job.id || '',
+        companyLogoUrl: job.company_logo_url || '',
+        companyWebsiteUrl: job.company_website_url || '',
+        employmentType: job.employment_type || '',
+        jobDescription: job.job_description || '',
+        location: job.location || '',
+        packagePerAnnum: job.package_per_annum || '',
+        rating: job.rating || '',
+        title: job.title || '',
+        skills: (job.skills || []).map(each => ({
           name: each.name,
           imageUrl: each.image_url,
         })),
         lifeAtCompany: {
-          description: job.life_at_company.description,
-          imageUrl: job.life_at_company.image_url,
+          description: job.life_at_company?.description || '',
+          imageUrl: job.life_at_company?.image_url || '',
         },
       }
 
-      const updatedSimilarJobs = data.similar_jobs.map(each => ({
+      const updatedSimilarJobs = (data.similar_jobs || []).map(each => ({
         id: each.id,
         companyLogoUrl: each.company_logo_url,
         employmentType: each.employment_type,
@@ -116,6 +117,11 @@ class JobItemDetails extends Component {
 
   renderSuccessView = () => {
     const {jobDetails, similarJobs} = this.state
+
+    if (!jobDetails) {
+      return null
+    }
+
     const {
       companyLogoUrl,
       companyWebsiteUrl,
@@ -125,8 +131,8 @@ class JobItemDetails extends Component {
       packagePerAnnum,
       rating,
       title,
-      skills,
-      lifeAtCompany,
+      skills = [],
+      lifeAtCompany = {description: '', imageUrl: ''},
     } = jobDetails
 
     return (
@@ -175,7 +181,7 @@ class JobItemDetails extends Component {
           <p className="job-description">{jobDescription}</p>
           <h1 className="skills-heading">Skills</h1>
           <ul className="skills-list">
-            {skills.map(each => (
+            {(skills || []).map(each => (
               <li key={each.name} className="skill-item">
                 <img
                   src={each.imageUrl}
@@ -202,7 +208,7 @@ class JobItemDetails extends Component {
         <div className="similar-jobs-section">
           <h1 className="similar-jobs-heading">Similar Jobs</h1>
           <ul className="similar-jobs-list">
-            {similarJobs.map(each => (
+            {(similarJobs || []).map(each => (
               <SimilarJobItem key={each.id} jobDetails={each} />
             ))}
           </ul>
