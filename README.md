@@ -1,4 +1,4 @@
-# Jobby APP#
+# Jobby APP
 
 Technologies Used:
 
